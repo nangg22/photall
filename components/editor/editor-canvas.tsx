@@ -7,7 +7,7 @@ import { useEditor } from "@/contexts/editor-context";
 import { CropOverlay } from "./crop-overlay";
 
 export function EditorCanvas() {
-  const { imageUrl, brightness, contrast, canvasRef, isCropping } = useEditor();
+  const { imageUrl, brightness, contrast, canvasRef, isCropping, backgroundColor } = useEditor();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -46,9 +46,15 @@ export function EditorCanvas() {
 
       ctx.filter = `brightness(${b}%) contrast(${c}%)`;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (backgroundColor && backgroundColor !== "transparent") {
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      
       ctx.drawImage(img, 0, 0);
     };
-  }, [imageUrl, brightness, contrast, canvasRef]);
+  }, [imageUrl, brightness, contrast, canvasRef, backgroundColor]);
 
   // Measure canvas rendered size so CropOverlay maps correctly
   const canvasEl = canvasRef.current;

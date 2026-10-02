@@ -41,6 +41,7 @@ export function UploadArea() {
     // Note: We need a way to pass the URL to the editor, 
     // passing via sessionStorage is a simple MVP approach
     sessionStorage.setItem("photall_current_image", objectUrl);
+    sessionStorage.setItem("photall_original_size", file.size.toString());
     
     toast.success("Gambar berhasil dimuat!");
     router.push("/editor");

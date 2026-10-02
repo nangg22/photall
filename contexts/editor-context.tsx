@@ -29,20 +29,148 @@ interface EditorState {
   aspectRatio: AspectRatio;
   setAspectRatio: (ratio: AspectRatio) => void;
   applyCrop: () => void;
+  // Background Removal
+  isBgProcessing: boolean;
+  bgLoadingMessage: string;
+  removeBackground: () => void;
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
+  originalFileSize: number;
+  setOriginalFileSize: (size: number) => void;
 }
 
 const EditorContext = createContext<EditorState | undefined>(undefined);
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [originalFileSize, setOriginalFileSize] = useState<number>(0);
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const workerRef = useRef<Worker | null>(null);
 
   // Crop state
   const [isCropping, setIsCropping] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("free");
   const [cropRect, setCropRect] = useState<CropRect>({ x: 0.1, y: 0.1, width: 0.8, height: 0.8 });
+
+  // Bg Removal State
+  const [isBgProcessing, setIsBgProcessing] = useState(false);
+  const [bgLoadingMessage, setBgLoadingMessage] = useState("");
+  const [backgroundColor, setBackgroundColor] = useState<string>("transparent");
+
+  // Initialize Web Worker
+  React.useEffect(() => {
+    workerRef.current = new Worker(new URL('@/lib/worker.ts', import.meta.url), { type: 'module' });
+    
+    workerRef.current.addEventListener('message', (e) => {
+      const { status, message, data, mask } = e.data;
+      
+      if (status === 'loading' || status === 'processing') {
+        setBgLoadingMessage(message);
+      } else if (status === 'progress') {
+        // data contains download progress (e.g. { name, progress, status })
+        if (data.status === 'downloading') {
+          setBgLoadingMessage(`Mengunduh model... ${Math.round(data.progress || 0)}%`);
+        }
+      } else if (status === 'complete') {
+        // We received the mask
+        applyMaskToImage(mask);
+      } else if (status === 'error') {
+        setIsBgProcessing(false);
+        toast.error(`Error: ${message}`);
+      }
+    });
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
+
+  const applyMaskToImage = useCallback((mask: { data: any, width: number, height: number }) => {
+    if (!canvasRef.current || !imageUrl) {
+      setIsBgProcessing(false);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      setIsBgProcessing(false);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = imageUrl;
+
+    img.onload = () => {
+      // Create a temporary canvas for original image
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+      const tempCtx = tempCanvas.getContext("2d");
+      if (!tempCtx) return;
+      tempCtx.drawImage(img, 0, 0);
+      const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Create a canvas for the mask
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = mask.width;
+      maskCanvas.height = mask.height;
+      const maskCtx = maskCanvas.getContext("2d");
+      if (!maskCtx) return;
+
+      // Draw mask data
+      const maskImageData = maskCtx.createImageData(mask.width, mask.height);
+      // mask.data from transformers is a Float32Array or Uint8Array of grayscale values
+      for (let i = 0; i < mask.data.length; i++) {
+        const val = typeof mask.data[i] === 'number' && mask.data[i] <= 1 ? mask.data[i] * 255 : mask.data[i];
+        maskImageData.data[i * 4] = val;     // R
+        maskImageData.data[i * 4 + 1] = val; // G
+        maskImageData.data[i * 4 + 2] = val; // B
+        maskImageData.data[i * 4 + 3] = 255; // A
+      }
+      maskCtx.putImageData(maskImageData, 0, 0);
+
+      // We need to resize the mask to match the original image size if they differ
+      const resizedMaskCanvas = document.createElement("canvas");
+      resizedMaskCanvas.width = img.width;
+      resizedMaskCanvas.height = img.height;
+      const resizedMaskCtx = resizedMaskCanvas.getContext("2d");
+      if (!resizedMaskCtx) return;
+      resizedMaskCtx.drawImage(maskCanvas, 0, 0, img.width, img.height);
+      
+      const resizedMaskData = resizedMaskCtx.getImageData(0, 0, img.width, img.height);
+
+      // Apply mask to original image data (modify alpha channel)
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        // mask is grayscale, just take the red channel (or any)
+        const alpha = resizedMaskData.data[i];
+        imgData.data[i + 3] = alpha; // update alpha channel of the original image
+      }
+
+      tempCtx.putImageData(imgData, 0, 0);
+
+      setImageUrl(tempCanvas.toDataURL("image/png"));
+      setIsBgProcessing(false);
+      setBgLoadingMessage("");
+      toast.success("Latar belakang berhasil dihapus!");
+    };
+  }, [imageUrl]);
+
+  const removeBackground = useCallback(() => {
+    if (!workerRef.current || !imageUrl) return;
+    setIsBgProcessing(true);
+    setBgLoadingMessage("Mempersiapkan...");
+    
+    // We send the current imageUrl (original or previously cropped/edited) to the worker
+    workerRef.current.postMessage({
+      action: 'remove-background',
+      imageUrl: imageUrl
+    });
+  }, [imageUrl]);
+
 
   const exportImage = useCallback((format: string, quality: number) => {
     if (!canvasRef.current) {
@@ -110,6 +238,13 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         aspectRatio,
         setAspectRatio,
         applyCrop,
+        isBgProcessing,
+        bgLoadingMessage,
+        removeBackground,
+        backgroundColor,
+        setBackgroundColor,
+        originalFileSize,
+        setOriginalFileSize,
       }}
     >
       {children}

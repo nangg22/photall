@@ -8,14 +8,18 @@ import { EditorCanvas } from "./editor-canvas";
 import { useEditor } from "@/contexts/editor-context";
 
 export function EditorLayout() {
-  const { imageUrl, setImageUrl } = useEditor();
+  const { imageUrl, setImageUrl, setOriginalFileSize } = useEditor();
   const router = useRouter();
 
   useEffect(() => {
     // Get image from session storage (used for MVP passing)
     const storedImage = sessionStorage.getItem("photall_current_image");
+    const storedSize = sessionStorage.getItem("photall_original_size");
     if (storedImage) {
       setImageUrl(storedImage);
+      if (storedSize) {
+        setOriginalFileSize(parseInt(storedSize, 10));
+      }
     } else {
       // If no image is provided, redirect to home
       router.push("/");
