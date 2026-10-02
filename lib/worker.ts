@@ -1,21 +1,18 @@
-import { env, pipeline } from '@huggingface/transformers';
+import { env, pipeline, type PipelineType, type ProgressCallback } from '@huggingface/transformers';
 
 // Skip local model check since we want to download from HF hub
 env.allowLocalModels = false;
 
-// Determine if we want to force WASM or use WebGPU. WebGPU is much faster.
-// We will rely on default device (which is webgpu if available, else wasm).
-
 class BackgroundRemovalPipeline {
-  static task = 'image-segmentation';
+  static task: PipelineType = 'image-segmentation';
   static model = 'briaai/RMBG-1.4';
   static instance: any = null;
 
-  static async getInstance(progress_callback: Function) {
+  static async getInstance(progress_callback: ProgressCallback) {
     if (this.instance === null) {
       this.instance = pipeline(this.task, this.model, {
         progress_callback,
-        device: 'webgpu', // Will fallback automatically if WebGPU not supported
+        device: 'webgpu',
       });
     }
     return this.instance;

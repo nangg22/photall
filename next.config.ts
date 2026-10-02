@@ -1,24 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Config needed for @huggingface/transformers to work in the browser
+  // Ensure these server-only packages are not bundled for the browser
   serverExternalPackages: ['@huggingface/transformers'],
-  webpack: (config, { isServer }) => {
+  // Empty turbopack config tells Next.js we are aware we're using Turbopack
+  turbopack: {},
+  webpack: (config) => {
+    // Prevent node-only modules from being bundled for the browser
     config.resolve.alias = {
       ...config.resolve.alias,
       "sharp$": false,
       "onnxruntime-node$": false,
-    }
+    };
     return config;
   },
-  experimental: {
-    turbopack: {
-      resolveAlias: {
-        "sharp$": "",
-        "onnxruntime-node$": "",
-      }
-    }
-  }
 };
 
 export default nextConfig;
