@@ -1,0 +1,1558 @@
+# PRD — PixelForge
+## Free & Open-Source Browser-Based Image Toolkit
+
+**Document version:** 1.0  
+**Status:** Draft / Development Blueprint  
+**Target:** Student-led open-source portfolio project  
+**Primary deployment:** Vercel Hobby / Netlify Free  
+**License target:** MIT for application code, with model/license notices kept separately  
+**Primary language:** Indonesian for UI copy, English for code/documentation where practical
+
+---
+
+# 1. Product Summary
+
+## 1.1 Product name
+
+Working name: **PixelForge**
+
+Tagline:
+
+> **Free, open-source image tools that run in your browser.**
+
+Alternative tagline:
+
+> **Remove. Enhance. Edit. Export. Free.**
+
+## 1.2 Product vision
+
+PixelForge is a privacy-first, free, open-source web application for common image-editing tasks that are frequently locked behind paid plans or usage limits on existing online tools.
+
+The first version focuses on:
+
+1. Background removal
+2. Background replacement
+3. Image enhancement / upscaling
+4. Resize and crop
+5. Compression
+6. Basic image adjustments
+7. Export to PNG/JPG/WebP
+
+The long-term goal is to become a lightweight image-processing toolkit for students, campus organizations, creators, small businesses, and developers.
+
+## 1.3 Core product principle
+
+The application should process images locally in the user's browser whenever technically feasible.
+
+Target flow:
+
+User → Browser → Local processing/model → Result → Download
+
+Avoid:
+
+User → Upload image → Paid third-party API → Server processing → Result
+
+This reduces recurring API costs, improves privacy, and makes the project more suitable for a genuinely free open-source product.
+
+---
+
+# 2. Problem Statement
+
+Many image tools provide background removal, AI enhancement, or high-resolution export but impose:
+
+- limited free credits
+- watermarks
+- resolution restrictions
+- account requirements
+- paid API dependencies
+- server-side upload of private images
+
+Students often need these tools for:
+
+- CV/profile photos
+- campus event posters
+- organization documentation
+- certificates
+- social media content
+- product photos
+- presentations
+- scholarship applications
+
+PixelForge aims to provide a simple alternative without requiring the user to learn professional image-editing software.
+
+---
+
+# 3. Target Users
+
+## 3.1 Primary users
+
+### A. Students
+
+Needs:
+- remove background
+- create formal photo
+- resize image
+- improve low-quality photos
+- compress images for assignments
+
+### B. Campus organizations / UKM
+
+Needs:
+- process many documentation photos
+- remove backgrounds from logos/people
+- prepare social-media images
+- batch process photos
+
+### C. Beginner creators
+
+Needs:
+- simple image editing
+- no Photoshop knowledge
+- fast results
+- mobile-friendly interface
+
+### D. Small businesses / UMKM
+
+Needs:
+- clean product photos
+- white-background product images
+- compression
+- resize for marketplaces/social media
+
+---
+
+# 4. Product Goals
+
+## 4.1 Main goals
+
+- Build a genuinely useful free image toolkit.
+- Keep the MVP simple enough for a student developer to finish.
+- Minimize dependency on paid APIs.
+- Make image processing client-side where possible.
+- Support desktop, tablet, and mobile.
+- Provide a professional UI rather than an "AI-generated-looking" interface.
+- Deploy using free hosting.
+- Publish the source code publicly on GitHub.
+- Create a project strong enough to become a portfolio centerpiece.
+
+## 4.2 Non-goals for MVP
+
+Do NOT initially build:
+
+- user accounts
+- payment system
+- cloud storage
+- social network
+- complex collaborative editing
+- server-side AI infrastructure
+- custom AI model training
+- Photoshop-level layer system
+- real-time multiplayer editing
+
+These can be considered later.
+
+---
+
+# 5. Recommended Technology Stack
+
+## 5.1 Frontend framework
+
+**Next.js 16.x + React + TypeScript**
+
+Why:
+
+- professional production framework
+- excellent React ecosystem
+- strong portfolio value
+- App Router
+- easy deployment to Vercel
+- can also be deployed to Netlify
+- supports static export if the app remains client-side
+- good structure for future expansion
+
+Recommended command:
+
+```bash
+npx create-next-app@latest pixelforge --typescript --eslint --app
+```
+
+Use the latest stable release rather than hard-pinning an outdated minor version.
+
+## 5.2 Styling
+
+**Tailwind CSS v4**
+
+Reasons:
+
+- responsive design is fast to implement
+- consistent design tokens
+- easy dark mode
+- suitable for component-based UI
+- no need to maintain a large custom CSS file
+
+## 5.3 UI component system
+
+**shadcn/ui**
+
+Use it selectively.
+
+Recommended components:
+
+- Button
+- Dialog
+- Dropdown Menu
+- Tabs
+- Tooltip
+- Slider
+- Progress
+- Select
+- Sheet
+- Card
+- Toast / Sonner
+
+Do not use every component simply because it exists.
+
+The interface should remain visually clean.
+
+## 5.4 Icons
+
+**Lucide React**
+
+Use icons consistently.
+
+Avoid mixing multiple icon libraries.
+
+## 5.5 Image processing
+
+Core browser APIs:
+
+- File API
+- Blob
+- URL.createObjectURL
+- Canvas API
+- OffscreenCanvas where appropriate
+- Web Workers
+
+These handle:
+
+- preview
+- crop
+- resize
+- compression
+- format conversion
+- basic adjustments
+
+## 5.6 AI / ML runtime
+
+**ONNX Runtime Web**
+
+Use this for browser-based AI inference.
+
+Primary execution strategy:
+
+1. WebGPU when supported
+2. WASM/CPU fallback
+
+This allows models to run locally in the browser.
+
+Potential use cases:
+
+- background removal
+- image segmentation
+- AI enhancement
+- super-resolution
+
+Important:
+
+Do not train your own model for the MVP.
+
+Use a compatible open-source model and document its license.
+
+## 5.7 State management
+
+Start with:
+
+**React state + Context**
+
+Do not immediately add Redux.
+
+Use Context only for global application state such as:
+
+- current image
+- editor settings
+- processing status
+- export configuration
+
+If the application later becomes significantly more complex, consider Zustand.
+
+## 5.8 Persistence
+
+MVP:
+
+**No database.**
+
+Use:
+
+- memory
+- localStorage for preferences
+- IndexedDB only when necessary for large temporary files/history
+
+Do not upload user images to a database.
+
+---
+
+# 6. Deployment Architecture
+
+## 6.1 Preferred architecture
+
+```text
+                    GitHub
+                       |
+                       v
+                Next.js Application
+                       |
+          +------------+------------+
+          |                         |
+          v                         v
+     Static UI                 Browser APIs
+          |                         |
+          |                    +----+----+
+          |                    |         |
+          |                  Canvas    Web Worker
+          |                    |         |
+          |                    +----+----+
+          |                         |
+          |                   ONNX Runtime
+          |                         |
+          |                    WebGPU/WASM
+          |                         |
+          +------------+------------+
+                       |
+                       v
+                   User device
+```
+
+## 6.2 Vercel
+
+Primary deployment target:
+
+**Vercel Hobby**
+
+Recommended because the project is a Next.js application.
+
+The MVP should avoid depending on server functions for image processing.
+
+## 6.3 Netlify
+
+Secondary deployment target:
+
+**Netlify Free**
+
+The project should remain deployable as a static/client-heavy application.
+
+## 6.4 Static export
+
+If all processing remains client-side, configure:
+
+```ts
+const nextConfig = {
+  output: "export",
+};
+
+export default nextConfig;
+```
+
+Then:
+
+```bash
+npm run build
+```
+
+produces a static `out/` directory.
+
+Important limitation:
+
+Static export does not support features requiring a persistent Next.js server.
+
+Therefore the architecture should deliberately avoid server-dependent processing in MVP.
+
+---
+
+# 7. MVP Feature Scope
+
+## 7.1 Feature P0 — Upload
+
+Supported:
+
+- JPG/JPEG
+- PNG
+- WebP
+
+Optional later:
+
+- HEIC
+- AVIF
+
+Requirements:
+
+- drag & drop
+- click to upload
+- paste image from clipboard
+- mobile camera/file picker
+- file validation
+- size validation
+- clear error message
+
+Example:
+
+> Drop an image here
+
+> or
+
+> Browse files
+
+Maximum recommended MVP input size:
+
+**20 MB**
+
+This can be adjusted after testing.
+
+---
+
+# 8. Feature P0 — Background Removal
+
+This is the flagship feature.
+
+## User flow
+
+```text
+Upload
+ ↓
+Image preview
+ ↓
+Remove Background
+ ↓
+Processing
+ ↓
+Transparent result
+ ↓
+Edit background
+ ↓
+Download
+```
+
+## UI
+
+Before processing:
+
+- image preview
+- Remove Background button
+
+During processing:
+
+- progress indicator
+- estimated stage
+- cancel option if technically possible
+
+After processing:
+
+- before/after comparison
+- transparent checkerboard background
+- background options
+
+Background options:
+
+- Transparent
+- White
+- Black
+- Custom color
+- Upload image
+
+---
+
+# 9. Feature P0 — Before/After Comparison
+
+Provide an interactive comparison slider.
+
+Desktop:
+
+```text
++------------------------------+
+| BEFORE       | AFTER         |
+|              |               |
+|      IMAGE   |    IMAGE      |
+|              |               |
++------------------------------+
+             ◄───●───►
+```
+
+Mobile:
+
+The comparison must remain usable with touch.
+
+---
+
+# 10. Feature P0 — Export
+
+Formats:
+
+- PNG
+- JPG
+- WebP
+
+PNG is the default when transparency exists.
+
+JPG is preferred when the user selects a solid background.
+
+WebP is offered as a smaller modern format.
+
+Export settings:
+
+- quality
+- width
+- height
+- format
+- transparent/solid background
+
+Show estimated file size when feasible.
+
+---
+
+# 11. Feature P0 — Resize
+
+Presets:
+
+- Original
+- 25%
+- 50%
+- 75%
+- 100%
+- Custom width
+- Custom height
+
+Controls:
+
+- lock aspect ratio
+- width
+- height
+
+Validation:
+
+- prevent invalid dimensions
+- warn about excessive output dimensions
+
+---
+
+# 12. Feature P0 — Crop
+
+Crop modes:
+
+- Free
+- 1:1
+- 4:5
+- 3:4
+- 4:3
+- 16:9
+- 9:16
+
+Presets should target common social-media and profile-photo requirements.
+
+---
+
+# 13. Feature P1 — AI Upscaling
+
+This should be released after background removal is stable.
+
+Options:
+
+- 2×
+- 4×
+
+The system should not simply stretch the image.
+
+It should use an appropriate super-resolution model.
+
+Important UX:
+
+Display a warning for large images:
+
+> AI upscaling can use significant memory and may take longer on mobile devices.
+
+Fallback:
+
+If WebGPU is unavailable, use WASM if the model/performance is acceptable.
+
+If the device is too weak:
+
+> Your device may not be powerful enough for this enhancement. Try a smaller image or use 2× instead of 4×.
+
+---
+
+# 14. Feature P1 — Image Enhancement
+
+Controls:
+
+- Brightness
+- Contrast
+- Saturation
+- Sharpness
+- Exposure
+- Blur
+- Grayscale
+
+These should initially use Canvas/WebGL/WebGPU operations rather than AI.
+
+---
+
+# 15. Feature P1 — Compression
+
+User chooses:
+
+- Low
+- Medium
+- High
+- Custom
+
+Display:
+
+```text
+Original: 4.8 MB
+Estimated output: 820 KB
+```
+
+The goal is not to promise an exact size before encoding.
+
+---
+
+# 16. Feature P1 — Student Presets
+
+This is an important differentiator.
+
+## 16.1 Formal Photo
+
+Preset:
+
+- background removal
+- white/red/blue background
+- portrait crop
+- enhancement
+- export
+
+## 16.2 Pas Foto
+
+Presets:
+
+- 2×3
+- 3×4
+- 4×6
+
+The UI should explain that local institutional requirements can vary.
+
+## 16.3 CV Photo
+
+Preset:
+
+- portrait crop
+- clean background
+- mild enhancement
+- high-quality export
+
+## 16.4 Social Media
+
+Presets:
+
+- Instagram portrait 4:5
+- Instagram square 1:1
+- Story/Reels 9:16
+- YouTube thumbnail 16:9
+- LinkedIn profile
+
+---
+
+# 17. Feature P2 — Batch Processing
+
+Example:
+
+```text
+Select 20 images
+       ↓
+Remove Background
+       ↓
+Processing 8 / 20
+       ↓
+Download ZIP
+```
+
+Use browser-side processing.
+
+Important:
+
+Batch processing should limit concurrency to prevent browser memory crashes.
+
+Example strategy:
+
+- 1–2 images simultaneously on mobile
+- 2–4 on desktop
+
+Tune after benchmarking.
+
+---
+
+# 18. Feature P2 — Object Removal
+
+User selects an area using a brush.
+
+Flow:
+
+```text
+Upload
+ ↓
+Brush over object
+ ↓
+AI/object removal
+ ↓
+Preview
+ ↓
+Accept / Retry
+```
+
+This is NOT part of MVP.
+
+---
+
+# 19. UI/UX Design Direction
+
+## 19.1 Design personality
+
+The UI should be:
+
+- minimal
+- modern
+- friendly
+- professional
+- fast
+- not intimidating
+- not overly "AI"
+
+Avoid:
+
+- excessive gradients
+- neon purple AI aesthetic
+- excessive glassmorphism
+- huge decorative illustrations
+- unnecessary animations
+- too many cards
+
+## 19.2 Recommended layout
+
+Desktop:
+
+```text
+┌───────────────────────────────────────────────┐
+│ PixelForge     Tools   Docs   GitHub    Theme │
+├───────────────────────────────────────────────┤
+│                                               │
+│       Edit your images. Free.                 │
+│       Open source. No account required.       │
+│                                               │
+│       ┌───────────────────────────────┐       │
+│       │                               │       │
+│       │       Drop image here         │       │
+│       │                               │       │
+│       │       Browse files            │       │
+│       │                               │       │
+│       └───────────────────────────────┘       │
+│                                               │
+│       JPG • PNG • WebP                       │
+│       Your images stay on your device        │
+│                                               │
+└───────────────────────────────────────────────┘
+```
+
+After upload:
+
+```text
+┌─────────────────────────────────────────────────┐
+│ Header                                          │
+├───────────────────────┬─────────────────────────┤
+│                       │ Tools                   │
+│                       │                         │
+│      IMAGE            │ Background              │
+│      PREVIEW          │ [Remove Background]     │
+│                       │                         │
+│                       │ Background              │
+│                       │ [Transparent] [White]  │
+│                       │                         │
+│                       │ Enhance                 │
+│                       │ [2x HD] [4x HD]         │
+│                       │                         │
+│                       │ Resize                  │
+│                       │ Width [ ] Height [ ]    │
+│                       │                         │
+│                       │ [Download]              │
+└───────────────────────┴─────────────────────────┘
+```
+
+Mobile:
+
+```text
+┌───────────────────────┐
+│ PixelForge       ☰    │
+├───────────────────────┤
+│                       │
+│       IMAGE           │
+│                       │
+├───────────────────────┤
+│ Background             │
+│ [Remove Background]    │
+├───────────────────────┤
+│ Enhance                │
+│ [2x] [4x]              │
+├───────────────────────┤
+│ Resize                 │
+│ [Width] [Height]       │
+├───────────────────────┤
+│ [ Download Image ]     │
+└───────────────────────┘
+```
+
+---
+
+# 20. Responsive Breakpoints
+
+Target:
+
+### Mobile
+
+< 640px
+
+Rules:
+
+- one-column layout
+- bottom action bar where useful
+- large touch targets
+- no hover-dependent functionality
+- compact controls
+
+### Tablet
+
+640px–1023px
+
+Rules:
+
+- flexible two-column layout where space permits
+- editor controls can become a drawer/sheet
+
+### Desktop
+
+≥ 1024px
+
+Rules:
+
+- preview + tools side-by-side
+- keyboard shortcuts
+- larger workspace
+
+Do not design for fixed device widths.
+
+Use fluid layouts.
+
+---
+
+# 21. Accessibility
+
+Minimum requirements:
+
+- semantic HTML
+- keyboard navigation
+- visible focus state
+- accessible labels
+- sufficient contrast
+- alt text
+- no color-only status indication
+- buttons must have clear labels
+- touch targets approximately 44px or larger
+- screen-reader friendly status messages
+
+Processing status should use an accessible live region.
+
+Example:
+
+> Removing background. Please wait.
+
+---
+
+# 22. Performance Requirements
+
+## 22.1 Core UI
+
+The landing page should load quickly before the heavy AI model is requested.
+
+Do NOT download the AI model immediately when the user opens the website.
+
+Instead:
+
+```text
+Open website
+ ↓
+Lightweight UI
+ ↓
+User uploads image
+ ↓
+User clicks Remove Background
+ ↓
+Load AI runtime/model
+```
+
+This is critical.
+
+## 22.2 Code splitting
+
+Lazy-load:
+
+- AI runtime
+- AI model
+- advanced editor
+- batch processing
+- object removal
+
+The user should not download 100% of the application just to crop an image.
+
+## 22.3 Web Worker
+
+Move heavy processing away from the main UI thread where possible.
+
+Goal:
+
+The UI should remain responsive while AI inference runs.
+
+---
+
+# 23. Privacy
+
+The default product promise:
+
+> **Your images stay on your device whenever local processing is available.**
+
+Do not claim "100% private" unless the implementation and analytics architecture truly support it.
+
+MVP:
+
+- no image uploads
+- no image database
+- no image history on server
+- no authentication required
+- no third-party image-processing API
+
+If analytics are added later, use privacy-conscious analytics and clearly disclose them.
+
+---
+
+# 24. Error Handling
+
+Common errors:
+
+### Unsupported format
+
+> This file format isn't supported. Try JPG, PNG, or WebP.
+
+### File too large
+
+> This image is too large. Try an image under 20 MB.
+
+### Browser memory problem
+
+> Your device ran out of memory while processing this image. Try a smaller image.
+
+### WebGPU unavailable
+
+> GPU acceleration isn't available. Falling back to CPU processing.
+
+### AI model failed
+
+> We couldn't process this image. Please try again or use a smaller image.
+
+Never show raw technical errors to normal users.
+
+---
+
+# 25. Suggested Project Structure
+
+```text
+pixelforge/
+│
+├── app/
+│   ├── page.tsx
+│   ├── editor/
+│   │   └── page.tsx
+│   ├── tools/
+│   │   ├── background-remover/
+│   │   ├── upscaler/
+│   │   ├── compressor/
+│   │   └── resize/
+│   ├── docs/
+│   ├── about/
+│   ├── privacy/
+│   ├── layout.tsx
+│   └── globals.css
+│
+├── components/
+│   ├── ui/
+│   ├── upload/
+│   ├── editor/
+│   ├── preview/
+│   ├── export/
+│   └── layout/
+│
+├── lib/
+│   ├── image/
+│   │   ├── resize.ts
+│   │   ├── crop.ts
+│   │   ├── compress.ts
+│   │   └── export.ts
+│   │
+│   ├── ai/
+│   │   ├── runtime.ts
+│   │   ├── background-removal.ts
+│   │   └── upscaler.ts
+│   │
+│   └── utils/
+│
+├── workers/
+│   ├── background-removal.worker.ts
+│   └── upscaler.worker.ts
+│
+├── public/
+│   ├── icons/
+│   └── models/
+│
+├── hooks/
+├── types/
+├── tests/
+│
+├── README.md
+├── LICENSE
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── PRIVACY.md
+└── package.json
+```
+
+Do not create all folders immediately. Create them as features are implemented.
+
+---
+
+# 26. GitHub Repository
+
+Repository:
+
+```text
+pixelforge
+```
+
+Recommended description:
+
+> Free and open-source browser-based image toolkit for background removal, enhancement, resizing, compression, and more.
+
+Recommended topics:
+
+```text
+nextjs
+react
+typescript
+image-processing
+computer-vision
+onnx
+onnxruntime
+webgpu
+open-source
+image-editor
+background-removal
+```
+
+README should contain:
+
+1. Project overview
+2. Demo
+3. Features
+4. Tech stack
+5. Architecture
+6. Privacy
+7. Local development
+8. Supported browsers
+9. Performance notes
+10. Roadmap
+11. Contributing
+12. License
+13. Model attribution/licenses
+
+---
+
+# 27. Licensing
+
+Recommended application license:
+
+**MIT**
+
+However:
+
+The application code license and AI model license are separate concerns.
+
+Before distributing a model:
+
+- verify its license
+- keep attribution if required
+- check commercial-use restrictions
+- check redistribution requirements
+- document the model source
+
+Do not assume every "open-source AI model" has an MIT license.
+
+---
+
+# 28. Development Phases
+
+## Phase 0 — Planning
+
+Deliverables:
+
+- PRD
+- wireframe
+- repository
+- README
+- architecture decision
+
+Status target:
+
+DONE before feature development.
+
+## Phase 1 — UI shell
+
+Build:
+
+- header
+- landing page
+- upload area
+- editor shell
+- responsive layout
+- dark/light mode
+- basic components
+
+No AI yet.
+
+## Phase 2 — Basic image processing
+
+Build:
+
+- preview
+- crop
+- resize
+- rotate
+- flip
+- brightness
+- contrast
+- export
+
+This validates the architecture before AI.
+
+## Phase 3 — Background removal
+
+Build:
+
+- ONNX Runtime Web
+- model loading
+- Web Worker
+- background segmentation
+- transparency
+- background replacement
+
+This becomes the MVP flagship feature.
+
+## Phase 4 — Export & compression
+
+Build:
+
+- JPG
+- PNG
+- WebP
+- quality slider
+- compression
+- estimated output size
+
+## Phase 5 — AI upscaling
+
+Build:
+
+- 2×
+- 4×
+- WebGPU
+- WASM fallback
+- memory protection
+
+## Phase 6 — Student presets
+
+Build:
+
+- Pas Foto
+- CV Photo
+- Social Media
+- Product Photo
+
+## Phase 7 — Batch
+
+Build:
+
+- multiple uploads
+- queue
+- progress
+- ZIP export
+
+## Phase 8 — Polish
+
+Build:
+
+- accessibility
+- mobile optimization
+- performance
+- error handling
+- documentation
+- tests
+- Lighthouse optimization
+
+---
+
+# 29. MVP Definition of Done
+
+The MVP is considered complete when:
+
+- [ ] User can open the website without logging in.
+- [ ] User can upload JPG/PNG/WebP.
+- [ ] User can preview the image.
+- [ ] User can remove background.
+- [ ] User can choose transparent/solid background.
+- [ ] User can resize the result.
+- [ ] User can crop the result.
+- [ ] User can export PNG/JPG/WebP.
+- [ ] Application works on desktop.
+- [ ] Application works on mobile.
+- [ ] Application does not require a paid API.
+- [ ] Image processing happens locally for supported features.
+- [ ] Heavy AI assets are lazy-loaded.
+- [ ] Errors are understandable.
+- [ ] GitHub repository is public.
+- [ ] README explains setup and architecture.
+- [ ] License is included.
+- [ ] Application deploys successfully to Vercel.
+- [ ] Application can also be deployed to Netlify.
+- [ ] No API keys are exposed in the frontend.
+
+---
+
+# 30. Success Metrics
+
+For the first public release:
+
+### Product
+
+- Background removal succeeds on common portrait/object images.
+- Exported image maintains expected dimensions.
+- No visible watermark.
+- No login required.
+
+### Performance
+
+Target:
+
+- landing page should feel fast
+- AI model should not load until needed
+- UI should remain responsive during processing
+- mobile should degrade gracefully
+
+### Developer
+
+- clean TypeScript
+- reusable components
+- understandable architecture
+- no unnecessary dependencies
+- documented model licensing
+
+---
+
+# 31. Security Considerations
+
+Because files are user-controlled:
+
+- validate file MIME type
+- validate file size
+- do not trust file extension alone
+- avoid injecting filename into HTML
+- revoke object URLs when no longer needed
+- avoid unnecessary server uploads
+- do not expose API secrets
+- sanitize any user-generated metadata
+- keep dependencies updated
+
+If a server is introduced later:
+
+- validate uploads server-side
+- limit request size
+- rate limit expensive processing
+- never store images by default
+- delete temporary files automatically
+
+---
+
+# 32. Recommended Browser Strategy
+
+Priority:
+
+```text
+1. WebGPU
+      ↓
+2. WASM / CPU
+      ↓
+3. Inform user if device is insufficient
+```
+
+For non-AI operations:
+
+```text
+Canvas / OffscreenCanvas
+```
+
+For heavy AI:
+
+```text
+Web Worker
++
+ONNX Runtime Web
++
+WebGPU/WASM
+```
+
+---
+
+# 33. What NOT to Build First
+
+Do not start with:
+
+- authentication
+- database
+- admin dashboard
+- payment
+- subscriptions
+- cloud image storage
+- social login
+- complicated editor layers
+- object removal
+- 4× upscaling
+- batch processing
+
+Start with:
+
+```text
+Upload
+ ↓
+Preview
+ ↓
+Remove Background
+ ↓
+Edit Background
+ ↓
+Resize/Crop
+ ↓
+Download
+```
+
+This is the shortest path to a usable product.
+
+---
+
+# 34. First Development Task
+
+The first coding milestone should be:
+
+## "PixelForge UI Shell"
+
+Before integrating any AI:
+
+1. Create GitHub repository.
+2. Create Next.js project.
+3. Install Tailwind CSS.
+4. Install shadcn/ui.
+5. Create responsive landing page.
+6. Create upload component.
+7. Implement local image preview.
+8. Create editor layout.
+9. Add dark/light theme.
+10. Test desktop/tablet/mobile.
+11. Deploy to Vercel.
+12. Confirm production build works.
+
+Only after this succeeds should the AI model be integrated.
+
+---
+
+# 35. Initial Commands
+
+Recommended starting point:
+
+```bash
+npx create-next-app@latest pixelforge --typescript --eslint --app
+cd pixelforge
+npm run dev
+```
+
+Then configure Tailwind CSS according to the current Next.js/Tailwind documentation.
+
+Then initialize shadcn/ui.
+
+Install the image/AI dependencies only when their corresponding feature is started.
+
+For ONNX Runtime Web:
+
+```bash
+npm install onnxruntime-web
+```
+
+Do not install a large collection of image libraries on day one.
+
+---
+
+# 36. Final Technical Decision
+
+## Recommended stack
+
+```text
+Frontend
+├── Next.js 16.x
+├── React
+├── TypeScript
+├── Tailwind CSS v4
+├── shadcn/ui
+└── Lucide React
+
+Image Processing
+├── Canvas API
+├── OffscreenCanvas
+├── Web Workers
+└── Web APIs
+
+AI
+├── ONNX Runtime Web
+├── WebGPU
+└── WASM fallback
+
+State
+└── React Context / local state
+
+Storage
+├── Memory
+├── localStorage
+└── IndexedDB when required
+
+Deployment
+├── Vercel Hobby
+└── Netlify Free
+
+Source Control
+└── GitHub
+
+Database
+└── None for MVP
+
+Authentication
+└── None for MVP
+
+Paid API
+└── None for MVP
+```
+
+---
+
+# 37. Product Positioning
+
+The product should NOT be marketed as:
+
+> "Another AI background remover."
+
+Instead:
+
+> **PixelForge is an open-source image toolkit designed to give students and creators essential image-processing tools without forcing them into subscriptions or paid APIs.**
+
+Core differentiators:
+
+1. Free
+2. Open source
+3. No account required
+4. Privacy-first
+5. Browser-based
+6. Student-friendly
+7. Responsive
+8. No watermark
+9. Multiple image tools in one place
+10. Community-driven
+
+---
+
+# 38. Long-Term Roadmap
+
+### v1.0
+
+Background removal + basic editor.
+
+### v1.1
+
+Compression + export improvements.
+
+### v1.2
+
+AI upscaling.
+
+### v1.3
+
+Student presets.
+
+### v1.4
+
+Batch processing.
+
+### v2.0
+
+Object removal + advanced enhancement.
+
+### v2.x
+
+PWA/offline-first improvements.
+
+### v3.0
+
+Optional local desktop application / Electron or Tauri consideration.
+
+The web application remains the primary product.
+
+---
+
+# 39. Final Product Principle
+
+The project should prioritize:
+
+```text
+USEFULNESS
+   ↓
+SIMPLICITY
+   ↓
+PRIVACY
+   ↓
+PERFORMANCE
+   ↓
+OPEN SOURCE
+   ↓
+ADVANCED AI
+```
+
+Do not sacrifice the first five merely to add more AI features.
+
+The strongest version of PixelForge is not the one with the most buttons.
+
+It is the one where a user can upload a photo, remove its background, make it look better, resize it, and download the result in seconds — without creating an account or paying for credits.
