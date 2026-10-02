@@ -1,19 +1,32 @@
 import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 import { cn } from "cn"
 
+type SliderProps = Omit<SliderPrimitive.Root.Props, "onValueChange"> & {
+  onValueChange?: (value: number[]) => void
+}
+
 function Slider({
   className,
   defaultValue,
   value,
   min = 0,
   max = 100,
+  onValueChange,
   ...props
-}: SliderPrimitive.Root.Props) {
+}: SliderProps) {
   const _values = Array.isArray(value)
     ? value
     : Array.isArray(defaultValue)
       ? defaultValue
-      : [min, max]
+      : [min]
+
+  // base-ui returns number | number[] depending on input type, normalize to number[]
+  const handleValueChange = onValueChange
+    ? (val: number | readonly number[]) => {
+        const arr = Array.isArray(val) ? [...val] : [val]
+        onValueChange(arr)
+      }
+    : undefined
 
   return (
     <SliderPrimitive.Root
@@ -24,6 +37,7 @@ function Slider({
       min={min}
       max={max}
       thumbAlignment="edge"
+      onValueChange={handleValueChange as SliderPrimitive.Root.Props["onValueChange"]}
       {...props}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
@@ -49,3 +63,4 @@ function Slider({
 }
 
 export { Slider }
+

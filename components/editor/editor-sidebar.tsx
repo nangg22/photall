@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { 
   Wand2, 
   Image as ImageIcon, 
@@ -12,15 +13,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
+import { useEditor } from "@/contexts/editor-context";
 
 export function EditorSidebar() {
+  const { brightness, setBrightness, contrast, setContrast, exportImage, isCropping, setIsCropping, aspectRatio, setAspectRatio, applyCrop } = useEditor();
+  const [exportFormat, setExportFormat] = useState<"image/png" | "image/jpeg" | "image/webp">("image/png");
+  const [exportQuality, setExportQuality] = useState(90);
+
   const handleRemoveBackground = () => {
     toast.info("Fitur Hapus Latar Belakang belum terintegrasi dengan AI (Tahap 3).");
   };
 
   const handleExport = () => {
-    toast.success("Mempersiapkan gambar untuk diunduh...");
-    // TODO: Implement Canvas API export
+    toast.success(`Mengekspor gambar sebagai ${exportFormat.split("/")[1].toUpperCase()}...`);
+    exportImage(exportFormat, exportQuality / 100);
   };
 
   return (
@@ -78,33 +84,82 @@ export function EditorSidebar() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <label>Kecerahan</label>
-                    <span className="text-muted-foreground">0%</span>
+                    <span className="text-muted-foreground">{brightness}%</span>
                   </div>
-                  <Slider defaultValue={[0]} max={100} min={-100} step={1} />
+                  <Slider 
+                    value={[brightness]} 
+                    onValueChange={(val) => setBrightness(val[0])}
+                    max={100} min={-100} step={1} 
+                  />
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <label>Kontras</label>
-                    <span className="text-muted-foreground">0%</span>
+                    <span className="text-muted-foreground">{contrast}%</span>
                   </div>
-                  <Slider defaultValue={[0]} max={100} min={-100} step={1} />
+                  <Slider 
+                    value={[contrast]} 
+                    onValueChange={(val) => setContrast(val[0])}
+                    max={100} min={-100} step={1} 
+                  />
                 </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setBrightness(0);
+                    setContrast(0);
+                  }}
+                >
+                  Reset
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Crop Tools */}
           <TabsContent value="crop" className="m-0 space-y-4">
-             <Card>
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-md">Potong (Crop)</CardTitle>
+                <CardDescription>Pilih rasio lalu sesuaikan area</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="secondary" size="sm">Bebas</Button>
-                  <Button variant="outline" size="sm">1:1 (Persegi)</Button>
-                  <Button variant="outline" size="sm">3:4 (Pas Foto)</Button>
-                  <Button variant="outline" size="sm">16:9 (Layar)</Button>
+                  {([
+                    { label: "Bebas", value: "free" },
+                    { label: "1:1 (Persegi)", value: "1:1" },
+                    { label: "3:4 (Pas Foto)", value: "3:4-pasfoto" },
+                    { label: "4:3 (Lanskap)", value: "4:3" },
+                    { label: "16:9 (Layar)", value: "16:9" },
+                    { label: "9:16 (Story)", value: "9:16" },
+                  ] as const).map((item) => (
+                    <Button
+                      key={item.value}
+                      variant={aspectRatio === item.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAspectRatio(item.value)}
+                    >
+                      {item.label}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-2 border-t">
+                  {!isCropping ? (
+                    <Button className="flex-1" onClick={() => setIsCropping(true)}>
+                      <Crop className="mr-2 h-4 w-4" /> Mulai Crop
+                    </Button>
+                  ) : (
+                    <>
+                      <Button className="flex-1" onClick={applyCrop}>
+                        Terapkan
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => setIsCropping(false)}>
+                        Batal
+                      </Button>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -116,21 +171,43 @@ export function EditorSidebar() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-md">Pengaturan Ekspor</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Format</label>
                   <div className="grid grid-cols-3 gap-2">
-                    <Button variant="secondary" size="sm">PNG</Button>
-                    <Button variant="outline" size="sm">JPG</Button>
-                    <Button variant="outline" size="sm">WEBP</Button>
+                    <Button 
+                      variant={exportFormat === "image/png" ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setExportFormat("image/png")}
+                    >PNG</Button>
+                    <Button 
+                      variant={exportFormat === "image/jpeg" ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setExportFormat("image/jpeg")}
+                    >JPG</Button>
+                    <Button 
+                      variant={exportFormat === "image/webp" ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setExportFormat("image/webp")}
+                    >WEBP</Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Kualitas Gambar</label>
-                  <Slider defaultValue={[90]} max={100} min={10} step={5} />
-                  <p className="text-xs text-right text-muted-foreground">90%</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <label className="font-medium">Kualitas Gambar</label>
+                    <span className="text-muted-foreground">{exportQuality}%</span>
+                  </div>
+                  <Slider 
+                    value={[exportQuality]} 
+                    onValueChange={(val) => setExportQuality(val[0])}
+                    disabled={exportFormat === "image/png"} // PNG is lossless by default in most canvas implementations
+                    max={100} min={10} step={5} 
+                  />
+                  {exportFormat === "image/png" && (
+                    <p className="text-xs text-muted-foreground">Kualitas tidak berlaku untuk format PNG.</p>
+                  )}
                 </div>
-                <Button className="w-full mt-2" size="lg" onClick={handleExport}>
+                <Button className="w-full" size="lg" onClick={handleExport}>
                   <Download className="mr-2 h-4 w-4" /> Unduh Gambar
                 </Button>
               </CardContent>
